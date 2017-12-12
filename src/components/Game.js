@@ -1,68 +1,53 @@
 import React, { Component } from 'react';
-
+import {connect} from 'react-redux';
+import * as actions from './../actions/index.js';
 var rows = new Array(10).fill(-1);
 var columns = new Array(10).fill(-1);
 var board = new Array(10).fill(rows);
 // value 1 mean X
 // value 0 mean O
 // value -1 mean nothing
-class Cell extends Component{
-    render(){
+const Cell = (props) => {
         return(
-            <button className="cell" id={this.props.id} onClick={this.props.onClick}></button>
+            <button className="cell" id={props.id} onClick={props.onClick}></button>
         )
-    }
 }
 
-class Board extends Component{
-    renderRow(){
+const Board = (props) => {
+    const renderRow = () => {
         return rows.map((data,index) =>
-                <Cell onClick={this.props.onClick} key={index+1} id ={index+1}/>
+                <Cell onClick={props.onClick} key={index+1} id ={index+1}/>
         )
     }
 
-    renderBoard(){
+    const renderBoard = () => {
         return columns.map((data,index) => (
                 <div className="board-row" key={index+1} id ={index + 1}>
-                    {this.renderRow()}
+                    {renderRow()}
                 </div>
             )
         )
     }
-
-    render(){
-        return(
-            <div className="board-game">
-                {this.renderBoard()}
-            </div>
+    return(
+          <div className="board-game">
+              {renderBoard()}
+          </div>
         )
-    }
 }
 
 
-export default class Game extends Component{
-    constructor(props){
-        super(props);
-        this.state = {
-            status: "Next player",
-            turn: "X",
-            winner: "",
-            isEnd: false,
-            moveList: [],
-        }
-    }
-
+class Game extends Component{
     handleBold = e =>{
         var elems = document.getElementsByTagName("li");
         for (var i = 0; i<elems.length; i++) {
-                elems[i].style.fontWeight = 'normal';    
+                elems[i].style.fontWeight = 'normal';
         }
 
         e.target.style.fontWeight = "bold";
     }
 
     renderMovelist(){
-        const moveList = this.state.moveList;
+        const moveList = this.props.moveList;
         return moveList.map((data,index) =>
                     <li key={index+1} id={index} onClick={this.handleBold}>{data}</li>
                 )
@@ -73,48 +58,42 @@ export default class Game extends Component{
     }
 
     handleClick = e =>{
-        var {turn,moveList,isEnd} = this.state;
+        var {turn,isEnd} = this.props;
         var moveText = "Moved to ";
         var row = e.target.parentNode.id-1;
         var column = e.target.id-1;
-        var temp = board[row];
+        //var temp = board[row];
         moveText += "col "+ e.target.id + " row " + e.target.parentNode.id;
         if(e.target.innerText === "" && isEnd === false){
             if(turn === "X"){
-                
-                board[row][column] = 1;
-                e.target.innerText = "X"
-                this.setState({
-                    turn: "O",
-                    moveList: moveList.concat(moveText)
-                })
+                //board[row][column] = 1;
+                e.target.innerText = "X";
+                e.target.style.color = "red";
+                this.props.dispatch(actions.turnToO(moveText));
             }
             if(turn === "O"){
-
-                board[row][column] = 0;
-
-                e.target.innerText = "O"
-                this.setState({
-                    turn: "X",
-                    moveList: moveList.concat(moveText)
-                })
+                //board[row][column] = 0;
+                e.target.innerText = "O";
+                e.target.style.color = "blue";
+                this.props.dispatch(actions.turnToX(moveText));
             }
-            isEnd = this.checkWin();
+            //isEnd = false;
             if(isEnd === true){
-                this.setState({
-                    status:"Winner is: " + turn,
-                    isEnd:true
-                })
+              console.log("game ended !")
+              this.props.dispatch(actions.setWinner());
             }
-            console.log("fdfs" + row + " " + column)
-            console.log(board);
         }
     }
 
+    handleReverseList = () => {
+        this.props.dispatch(actions.reverseList());
+    }
     checkWin(){
 
     }
 
+    componentWillMount(){
+    }
 
     render(){
         return(
@@ -122,9 +101,13 @@ export default class Game extends Component{
             <Board onClick={this.handleClick}/>
 
             <div className="infor">
-                <div className="status">{this.state.status} : {this.state.turn}</div>
+                <div className="status">{this.props.status} : {this.props.turn}</div>
                 <button className="restart-btn" onClick={this.handleRestart}>Restart</button>
-                
+
+                <label className="switch">
+                  <input type="checkbox"/>
+                  <span className="slider round" onClick={this.handleReverseList}></span>
+                </label>
 
                 <div className="move-list">
                     Move list:
@@ -134,8 +117,17 @@ export default class Game extends Component{
                 </div>
             </div>
 
-
             </div>
         )
     }
 }
+const mapStateToProps = (state) =>{
+  return {
+    status: state.mainReducer.status,
+    turn: state.mainReducer.turn,
+    winner: state.mainReducer.winner,
+    isEnd: state.mainReducer.isEnd,
+    moveList: state.mainReducer.moveList,
+  };
+}
+export default connect (mapStateToProps)(Game);
